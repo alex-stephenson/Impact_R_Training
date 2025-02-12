@@ -48,3 +48,126 @@ my_combined_log <- my_combined_log %>%
 create_xlsx_cleaning_log(my_combined_log,
                          sm_dropdown_type = "logical",
                          output_path =  "../outputs/01 - example - cleaning-log-no-kobo.xlsx")
+
+##2 
+
+
+my_filled_log <- readxl::read_excel("02 - example - cleaning-log-with-kobo - filled.xlsx", sheet = 2)
+
+check_log_results <- review_cleaning_log(raw_dataset = my_raw_dataset,
+                                         raw_data_uuid_column = "X_uuid",
+                                         cleaning_log = my_filled_log, 
+                                         cleaning_log_uuid_column = "uuid",
+                                         cleaning_log_question_column = "question",
+                                         cleaning_log_new_value_column = "new_value",
+                                         cleaning_log_change_type_column = "change_type",
+                                         change_response_value = "change_response")
+check_log_results
+
+
+my_clean_data <- create_clean_data(raw_dataset = my_raw_dataset,
+                                   raw_data_uuid_column = "X_uuid",
+                                   cleaning_log = my_filled_log, 
+                                   cleaning_log_uuid_column = "uuid",
+                                   cleaning_log_question_column = "question",
+                                   cleaning_log_new_value_column = "new_value",
+                                   cleaning_log_change_type_column = "change_type")
+
+my_clean_data2 <- recreate_parent_column(dataset = my_clean_data,
+                                         uuid_column = "X_uuid",
+                                         kobo_survey = my_kobo_survey,
+                                         kobo_choices = my_kobo_choice,
+                                         sm_separator = ".", 
+                                         cleaning_log_to_append = my_filled_log)
+
+review_other_log <- review_others(dataset = my_clean_data2$data_with_fix_concat,
+                                  uuid_column = "X_uuid", 
+                                  kobo_survey = my_kobo_survey, 
+                                  columns_not_to_check = "consent_telephone_number")
+
+
+my_deletion_log <- my_clean_data2$cleaning_log %>% 
+  filter(change_type == "remove_survey")
+
+my_filled_log_no_deletion <- my_clean_data2$cleaning_log %>% 
+  filter(change_type != "remove_survey") %>% 
+  filter(!uuid %in% my_deletion_log$uuid)
+
+review_of_cleaning <- review_cleaning(raw_dataset = my_raw_dataset,
+                                      raw_dataset_uuid_column = "X_uuid", 
+                                      clean_dataset = my_clean_data2$data_with_fix_concat,
+                                      clean_dataset_uuid_column = "X_uuid",
+                                      cleaning_log = my_filled_log_no_deletion, 
+                                      cleaning_log_uuid_column = "uuid",
+                                      cleaning_log_question_column = "question",
+                                      cleaning_log_new_value_column = "new_value",
+                                      cleaning_log_change_type_column = "change_type", 
+                                      cleaning_log_old_value_column = "old_value", 
+                                      deletion_log = my_deletion_log, 
+                                      deletion_log_uuid_column = "uuid"
+)
+
+## practice 
+
+## 1 
+
+previous_exercise_log <- readRDS("03 - exercise - previous_log.RDS")
+
+previous_exercise_log %>% names()
+
+combined_log <- previous_exercise_log %>%
+  create_combined_log()
+
+
+create_xlsx_cleaning_log(combined_log,
+                         kobo_survey = my_kobo_survey,
+                         kobo_choices = my_kobo_choice,
+                         sm_dropdown_type = "logical",
+                         output_path =  "outputs/ex_2_1_clog.xlsx")
+
+
+exercise_filled_log <- readxl::read_excel("04 - exercise - cleaning_log - filled.xlsx", sheet = "cleaning_log")
+exercise_checked_data <- combined_log$checked_dataset
+
+
+
+my_clean_data <- create_clean_data(raw_dataset = exercise_checked_data,
+                                   raw_data_uuid_column = "X_uuid",
+                                   cleaning_log = exercise_filled_log, 
+                                   cleaning_log_uuid_column = "uuid",
+                                   cleaning_log_question_column = "question",
+                                   cleaning_log_new_value_column = "new_value",
+                                   cleaning_log_change_type_column = "change_type")
+
+exercise_clean_dataset2 <- recreate_parent_column(my_clean_data,
+                                                  uuid_column = "X_uuid", 
+                                                  kobo_survey = my_kobo_survey,
+                                                  kobo_choices = my_kobo_choice,
+                                                  cleaning_log_to_append = exercise_filled_log)
+
+
+exercise3_clean_dataset <- readxl::read_excel("05 - exercise - clean dataset for review.xlsx")
+
+exercise3_cleaning_log <- readxl::read_excel("05 - exercise - clean dataset for review.xlsx", sheet = 2)
+
+exercise3_deletion_log <- exercise3_cleaning_log %>% 
+  filter(change_type == "remove_survey")
+
+exercise3_log_no_deletion <- exercise3_cleaning_log %>% 
+  filter(change_type != "remove_survey") %>% 
+  filter(!uuid %in% exercise3_deletion_log$uuid)
+
+review_of_cleaning <- review_cleaning(raw_dataset = exercise_checked_data,
+                                      raw_dataset_uuid_column = "X_uuid", 
+                                      clean_dataset = exercise3_clean_dataset,
+                                      clean_dataset_uuid_column = "X_uuid",
+                                      cleaning_log = exercise3_log_no_deletion, 
+                                      cleaning_log_uuid_column = "uuid",
+                                      cleaning_log_question_column = "question",
+                                      cleaning_log_new_value_column = "new_value",
+                                      cleaning_log_change_type_column = "change_type", 
+                                      cleaning_log_old_value_column = "old_value", 
+                                      deletion_log = exercise3_deletion_log, 
+                                      deletion_log_uuid_column = "uuid"
+)
+
